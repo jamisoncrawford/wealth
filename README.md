@@ -9,6 +9,10 @@
 
 Records failing to disclose gross income, `gross`, and ZIP code, `zip`, are excluded. Variables on race or ethnicity, `race`, and gender, `sex`, have been addressed in the racial equity impact statement and are excluded from analysis.
 
+**Research Question.**
+
+> How much and what percentage of gross income are earned by itinerate workers purported to live outside Onondaga County? 
+
 # Sources
 
 Records were retrieved via FOIL requests by Andrew Croom, Esq. Sources for each project include:
