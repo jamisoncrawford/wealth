@@ -19,3 +19,9 @@ Records were retrieved via FOIL requests by Andrew Croom, Esq. Sources for each 
 
 * Hancock Renovations: Syracuse Regional Airport Authority
 * Lakeview Construction: Onondaga County
+
+# Contributors
+
+**Jamison R. Crawford, MPA.** Data scraping, cleaning, analysis, and reporting.
+
+**Andrew Croom, Esq.** Raw data collection and scraping.
