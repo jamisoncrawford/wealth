@@ -20,6 +20,10 @@ Records were retrieved via FOIL requests by Andrew Croom, Esq. Sources for each 
 * Hancock Renovations: Syracuse Regional Airport Authority
 * Lakeview Construction: Onondaga County
 
+# Caveats
+
+**Raw Data Containing PII.** Unredacted raw data for Lakeview Amphitheater contain PII (personally-identifiable information) and are stored in a private repository: [Lakeview PII](https://github.com/jamisoncrawford/lakeview-pii).
+
 # Contributors
 
 **Jamison R. Crawford, MPA.** Data scraping, cleaning, analysis, and reporting.
