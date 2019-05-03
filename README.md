@@ -11,7 +11,7 @@ Records failing to disclose gross income, `gross`, and ZIP code, `zip`, are excl
 
 **Research Question.**
 
-> How much and what percentage of gross income are earned by itinerate workers purported to live outside Onondaga County? 
+> How much gross income are earned by itinerate workers purported to live outside Onondaga County? 
 
 # Sources
 
