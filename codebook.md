@@ -14,7 +14,7 @@ The following variables are found in `hancock_lakeview_tidy.csv` in the [Tidy Da
 
 6. `class` - categorical; indicates whether worker is `Apprentice`, `Journeyman`, or `Foreman` per payment record
 
-* If company records distinguish `Apprentice` or `Foreman`, but not `Journeyman`, it is assumed workers without explicitly stated `class` are `Journeyman` 
+    * If company records distinguish `Apprentice` or `Foreman`, but not `Journeyman`, it is assumed workers without explicitly stated `class` are `Journeyman` 
 
 7. `hours` - numeric/double; total hourage of worker record, including regular and overtime hours (combined during scraping)
 
@@ -24,17 +24,17 @@ The following variables are found in `hancock_lakeview_tidy.csv` in the [Tidy Da
 
 10. `net` - numeric/double; total net pay, in USD, earned by worker during work period of date `ending`
 
-* Note that `net` may contain payment for workers which are separate from specified `project`, and `net` is not a reflection of `gross` less deductions solely for the project
+    * Note that `net` may contain payment for workers which are separate from specified `project`, and `net` is not a reflection of `gross` less deductions solely for the project
   
-* For this reason, it is advised to use `gross` as the most accurate reflection of earnings pertaining to `project`
+    * For this reason, it is advised to use `gross` as the most accurate reflection of earnings pertaining to `project`
   
 11. `sex` - categorical; worker gender per record, only including categories `Male` and `Female`
 
-* If company records distinguish `sex` and/or `race`, worker records containing no distinction are assumed `Male`
+    * If company records distinguish `sex` and/or `race`, worker records containing no distinction are assumed `Male`
   
 12. `race` - categorical; race/ethnicity of worker per record, and includes human-readable abbreviations established by [EEOC race/ethnic classifications](https://www.eeoc.gov/eeoc/statistics/employment/jobpat-eeo1/glossary.cfm)
 
-* If company records distinguish `sex` and/or `race`, worker records containing no distinction are assumed `White` 
+    * If company records distinguish `sex` and/or `race`, worker records containing no distinction are assumed `White` 
   
 13. `ot` - logical; indicates whether `hours` of payment record includes overtime pay
 
