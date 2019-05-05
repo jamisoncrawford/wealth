@@ -1,7 +1,7 @@
 ---
-title: "Now Departing: Three Quarters of Every Dollar Earned in Hancock Renovations Left Onondaga County"
+title: "Now Departing Hancock Airport: Onondaga's Exodus of Wealth by Itinerant Workers"
 author: "Jamison R. Crawford, MPA"
-date: "May 3, 2019"
+date: "May 4, 2019"
 output: 
   html_document:
     toc: true
@@ -17,48 +17,105 @@ text-align: justify}
 
 # Overview
 
-The following outlines the exodus of nearly 75 cents on the dollar from Onondaga County by itinerate workers imported from other counties for the 2018 Hancock Airport renovations. These findings are completely reproducible from the raw data, provided by Syracuse Regional Airport Authority, and may be found on my [GitHub](https://github.com/jamisoncrawford/wealth).
+The following outlines the exodus of wealth from Onondaga County during the 2018 Hancock Airport renovations, when nearly 75 cents on the dollar left Onondaga County along with itinerant workers residing in 24 other counties. 
 
-This is a slapdash publication, which will be formatted with human-readable text this weekend.
+These findings are completely reproducible from the raw data, provided by Syracuse Regional Airport Authority, and may be found in my GitHub repository: [Wealth](https://github.com/jamisoncrawford/wealth). 
 
-# Load Packages
+While machine-readable code to reproduce the analysis is provided, human-readable text walks the reader through each step in preprocessing, analysis, visualization, and the staggering conclusions.
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+See **Part 2: Executive Summary** for chief conclusions.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+if(!require("sf")){install.packages("sf")}
+if(!require("tmap")){install.packages("tmap")}
 if(!require("readr")){install.packages("readr")}
 if(!require("dplyr")){install.packages("dplyr")}
 if(!require("tigris")){install.packages("tigris")}
 if(!require("scales")){install.packages("scales")}
 if(!require("stringr")){install.packages("stringr")}
 if(!require("ggplot2")){install.packages("ggplot2")}
+if(!require("leaflet")){install.packages("leaflet")}
 if(!require("noncensus")){install.packages("noncensus")}
 if(!require("kableExtra")){install.packages("kableExtra")}
 
+```
+
+<br>
+
+# Executive Summary
+
+Onondaga County earns the greatest total gross at $288K (26.2%) and had the most workers at 67 (35.4%) of any county, but 122 itinerant workers from 24 other counties, including 2 counties in Pennsylvania, left with the remaining 73.8% of gross income, or $812K.
+
+Oswego County workers were a close second with total county earnings of $262K (23.8%) but had 23.8% less workers at 51 total workers (27%). Oswego workers earned an average gross of $5.1K, 19.2% higher than the average Onondaga worker, earning $4.3K.
+
+Tioga County, Pennsylvania earned the third highest gross at $70K (6.4%), which is 75.4% less than Onondaga County. However, it had 92.5% fewer workers (5, or 2.6% of the total workforce). 4 of these 5 workers were Journeymen Carpenters working for *Quality Structures, Inc.* and individually earned total gross incomes of $18.7K, $15.7K, $15.5K, and $14.3K, while 1 Apprentice Carpenter earned $6.4K. On average, each Tioga County worker earned a whopping 228.6% more than the average Onondaga County worker, at $14.1K and $4.3K, respectively.
+
+Lastly, one Foreman from Summit, NY (pop. 1,123) single-handedly carried the entirety of Schoharie County to 10th highest grossing counties, among 25 counties total, earning $27.8K alone.
+
+The 2018 Hancock Airport renovations illustrate a staggering exodus of wealth by itinerant workers in public construction projects.
+
+<br>
+
+# Required Packages & Data
+
+The following R packages and datasets are required for this analysis and loaded with functions `library()` and `data()`.
+
+<br>
+
+```{r message=FALSE, warning=FALSE, cache=TRUE}
+
+library(sf)
+library(tmap)
 library(readr)
 library(dplyr)
 library(tigris)
 library(scales)
 library(stringr)
 library(ggplot2)
+library(leaflet)
 library(noncensus)
 library(kableExtra)
-```
 
-# Read in Data
-
-```{r}
 data(zip_codes)
 data(counties)
 
-url <- "https://raw.githubusercontent.com/jamisoncrawford/wealth/master/Tidy%20Data/hancock_lakeview_tidy.csv"
+```
+
+<br>
+
+# Importing External Data
+
+Below, we import the CSV (Comma-Separated Value) file containing all scraped records for both Lakeview Amphitheater constructions and Hancock Airport renovations: `hancock_lakeview_tidy.csv`. This file is available in the [Wealth Repository](https://github.com/jamisoncrawford/wealth), which also includes the [Raw Data Folder](https://github.com/jamisoncrawford/wealth/tree/master/Raw%20Data/Hancock) containing the original records.
+
+<br>
+
+```{r message=FALSE, warning=FALSE, cache=TRUE}
+
+url <- paste0("https://raw.githubusercontent.com/jamisoncrawford/",
+              "wealth/master/Tidy%20Data/hancock_lakeview_tidy.csv")
 lvhc <- read_csv(file = url, 
                  col_types = "ccDcccddddccliii")
-
 rm(url)
+
 ```
+
+<br>
 
 # Convert ZIP to Counties
 
-```{r}
+By using R package `noncensus`, we can convert worker ZIP (Zone Improvement Plan) codes to counties based on their individual payment records. The preprocessing occurs as follows:
+
+1. Create new variable `fips` in dataset `counties` to determine [FIPS county code](https://en.wikipedia.org/wiki/FIPS_county_code)
+2. Filter missing values from Lakeview & Hancock data `lvhc` for ZIP codes, gross income, and project name
+3. Merge `zip_codes` dataset with Lakeview & Hancock data `lvhc` by FIPS county codes
+4. Merge `counties` dataset with Lakeview & Hancock data `lvhc` by county names
+5. Filter ~8 records failing to identify county (0.2% of total records)
+6. Separate data by project, viz. Hancock records, `hc`, and Lakeview records, `lv`
+
+<br>
+
+```{r cache=TRUE}
 
 counties <- counties %>%
   mutate(fips = paste0(state_fips, 
@@ -92,22 +149,32 @@ hc <- lvhc %>%
 
 ```
 
-# Summaries by Group
+<br>
 
-```{r}
+# County Summaries
+
+Here, we perform a series of grouping and summarizing operations. In effect, we produce the following summary data:
+
+* Total gross per county and state, as well as proportion of total gross: `hc_gross`
+* Total gross per individual worker, identified by company, ZIP, SSN, class, gender, and race: `hc_inds`
+* Total workers and proportion of workforce by county and state, combined with gross income: `hc_all`
+
+<br>
+
+```{r cache=TRUE}
 
 hc_gross <- hc %>%
   group_by(county, state) %>%
-  summarize(gross = sum(gross)) %>%       # Total gross by county
+  summarize(gross = sum(gross)) %>%               # Total gross by county
   ungroup() %>%
   arrange(desc(gross)) %>%
-  mutate(perc_gross = gross / sum(gross)) # Percentage of total gross
+  mutate(perc_gross = gross / sum(gross))         # Percentage of total gross
 
 hc_inds <- hc %>%
   group_by(name, zip, ssn, class, sex, race) %>%
   summarize(gross = sum(gross),
             county = unique(county),
-            state = unique(state)) %>%    # Total gross by individual
+            state = unique(state)) %>%            # Total gross by individual
   ungroup() %>%
   arrange(county, desc(gross))
 
@@ -116,32 +183,35 @@ hc_wrks <- hc_inds %>%
   summarize(workers = n(),
             gross = sum(gross)) %>%
   ungroup() %>%
-  arrange(desc(gross))                    # Total workers by county
+  arrange(desc(gross))                            # Total workers by county
 
 hc_all <- hc_gross %>%
   left_join(hc_wrks,
             by = c("county", "state")) %>%
   select(-gross.y) %>%
-  rename(gross = gross.x)                 # Merge workers and gross
-
-hc_all <- hc_all %>%
+  rename(gross = gross.x) %>%                     # Merge workers and gross
   mutate(perc_workers = workers / sum(workers))
 
 rm(hc_gross, hc_wrks)
 
-
 ```
+
+<br>
 
 # Visualizing an Exodus
 
-```{r}
+The below code visualizes and stores the above summary data, `hc_all`, in graphical object `county_gross` using the Tidyverse graphics package `ggplot2`. Labels, style, and other "non-data ink" are modified for clarity to produce **Total gross income by county, state**.
+
+<br>
+
+```{r cache=TRUE}
 
 options(scipen = 999)                     # Disable scientific notation
 
-ggplot(hc_all, 
-       aes(x = reorder(county, gross), gross, 
-           y = gross, 
-           fill = state)) +
+county_gross <- ggplot(hc_all, 
+                       aes(x = reorder(county, gross), gross, 
+                           y = gross, 
+                           fill = state)) +
   geom_bar(stat = "identity") +
   coord_flip() +
   labs(title = "Total gross income by county, state",
@@ -155,23 +225,225 @@ ggplot(hc_all,
 
 ```
 
-# Summary Table
+<br>
 
-```{r}
+**The resulting visual is disheartening.** Although 35.4% of all workers reside in Onondaga County, only 26.2% of gross income is earned by Onondaga County residents. Indeed, nearly three quarters of every dollar earned in the 2018 Hancock Airport renovations left Onondaga County along with itinerant workers residing in 24 other counties. 
+
+<br>
+
+<center>
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+
+county_gross
+
+```
+
+</center>
+
+<br>
+
+# Context Is Everything
+
+**The context is staggering.** While the above visualization, **Total gross income by county, state**, is indeed disheartening, the numbers behind the graphic are overwhelming. The following code modifies table labels and produces an interactive table of key summary data in HTML, using package `kableExtra`. Notable conclusions follow, which underscore this exodus of wealth by itinerant workers.
+
+<br>
+
+```{r cache=TRUE}
+
 hc_all_tbl <- hc_all %>%
   mutate(gross = dollar(gross),
          perc_gross = percent(perc_gross),
-         perc_workers = percent(perc_workers)) %>%
+         perc_workers = percent(perc_workers)) %>%      # Modify labels, e.g. "%", "$"
   rename(County = county,
          State = state,
          "Total Gross" = gross,
          "Gross (%)" = perc_gross,
          "Total Workers" = workers,
-         "Workforce (%)" = perc_workers)
+         "Workforce (%)" = perc_workers)                # Rename variables
+
+county_tbl <- kable(hc_all_tbl) %>%
+  kable_styling(bootstrap_options = c("striped",        # Stripe table rows
+                                      "hover",          # Interactivity
+                                      "responsive"),    # Automate fit adjustment
+                full_width = TRUE)
+
+```
+
+<br>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 kable(hc_all_tbl) %>%
   kable_styling(bootstrap_options = c("striped", 
                                       "hover", 
                                       "responsive"),
                 full_width = TRUE)
+
 ```
+
+<br>
+
+# Conclusions
+
+In light of total workers per county vis-à-vis total gross per county, the notable conclusions follow:
+
+1. Onondaga County had the greatest total gross ($288K, 26.2%) and workers (67, 35.4%)
+  
+2. Oswego County was a close second in total gross ($262K, 23.8%) but 23.8% fewer workers (51, 27.0%)
+  
+    - Oswego workers earned an average gross 19.2% more than Onondaga workers ($5.1K & $4.3K, respectively)
+  
+3. Tioga County, PA earned 75.4% less gross than Onondaga ($70K, 6.4%) but with 92.5% fewer workers (5, 2.6%)
+  
+    - Notably, 4 Journeymen Carpenters earned $18.7K, $15.7K, $15.5K, and $14.3K, and 1 Apprentice earned $6.4K 
+  
+    - Tioga workers earned an average gross 228.6% more than Onondaga workers ($14.1K & $4.3K, respectively)
+  
+4. One Foreman from Summit, NY (pop. 1,123) carried Schoharie County to 10th place with total gross of $27.8K
+
+<br>
+
+# Index
+
+## Map: Gross by County
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, cache=TRUE}
+
+shapes <- counties(state = c("NY", "PA"),
+                   resolution = "20m", 
+                   year = 2016,
+                   class = "sf")
+
+```
+
+The following uses package `tigris` to import [shapefiles](https://en.wikipedia.org/wiki/Shapefile), or tables of longitude-latitude coordinates for meaningful geometric shapes, from the U.S. Census Bureau (2016). Package `sf`, or "simple features", allows one to easily merge tables like `hc_all`, containing our totals and proportions of gross earnings and workers by county, into the appropriate county shapefile.
+
+<br>
+
+```{r eval=FALSE}
+
+shapes <- counties(state = c("NY", "PA"),     # Import NY & PA counties
+                   resolution = "20m",        # Maximum resolution
+                   year = 2016,               # Census data year
+                   class = "sf")              # Specify class "simple features"
+
+```
+
+<br>
+
+One can then use these easily-modifiable shapefiles in dataset `shapes` to merge them with the gross and worker summaries by county visualized in **Part 7: Visualizing an Exodus** (`hc_all`). By iterating over each shapefile, the following code removes irrelevant county shapefiles where no itinerant Hancock renovation workers reside. 
+
+<br>
+
+```{r message=FALSE, warning=FALSE, cache=TRUE}
+
+shapes <- fortify(shapes)                       # Preserve class "simple features"
+
+hcsf <- shapes %>%
+  rename(county = NAME) %>%
+  left_join(hc_all) %>%                         # Merge summary on variable "county"
+  mutate(gross_usd = dollar(gross),
+         perc_gross = percent(perc_gross),
+         perc_workers = percent(perc_workers))  # Modify formatting, e.g. "%", "$"
+
+for (i in 1:nrow(hcsf)){
+  if (is.na(hcsf$gross)[i]){
+    hcsf$gross[i] <- 0                          # Replace missing gross with "$0"
+    hcsf$county[i] <- ""                        # Remove irrelevant county labels
+  }
+}
+
+```
+
+<br>
+
+Lastly, the below code uses packages `tmap` and `leaflet` to create a [choropleth map](https://en.wikipedia.org/wiki/Choropleth_map), or a geographic map of geometric shapes - in this case, counties - where a gradient color scale fills each shape and is more or less saturated (darker or lighter) based on a particular data value - in this case, total gross income.
+
+<br>
+
+```{r message=FALSE, warning=FALSE, cache=TRUE}
+
+hc_chor <- tm_shape(hcsf) +
+  tm_fill(col = "gross",
+          title = "Gross (USD)",
+          style = "cont",
+          alpha = 0.75, 
+          id = "NAMELSAD",
+          popup.vars = c("Gross (USD):" = "gross",
+                         "Gross (%):" = "perc_gross",
+                         "Workers:" = "workers",
+                         "Workforce (%):" = "perc_workers")) +
+  tm_borders(col = "White",
+             lwd = 1.6) +
+  tm_text(text = "county", size = .75) +
+  tm_layout(main.title.position = c("LEFT", "TOP"),
+            legend.title.size = 1,
+            legend.position = c("RIGHT", "BOTTOM"),
+            frame = FALSE, saturation = -3)
+
+tmap_mode(mode = "view")
+
+```
+
+<br>
+
+<center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+tmap_leaflet(hc_chor) %>%
+  setView(lng = -76.1474, 
+          lat = 43.0481, 
+          zoom = 7)
+
+```
+
+</center>
+
+<br>
+
+## Distribution: Gross by Worker
+
+The following visualization, made in package `ggplot2`, illustrates total gross earnings by individual workers per each of the 25 counties, including a boxplot that indicates the first quartile (25th percentile), third quartile (75th percentile), and median (50th percentile) for total individual gross by county.
+
+These distributions emphasize just how paltry gross earnings were among Onondaga County workers compared to itinerant workers involved in the 2018 Hancock Airport renovations, highlighting the massive exodus of wealth by itinerant workers from counties such as Schoharie, Broom, and Cortland.
+
+<br>
+
+```{r message=FALSE, warning=FALSE, cache=TRUE}
+
+dist_inds <- ggplot(hc_inds, 
+                    aes(x = reorder(county, gross), 
+                        y = gross)) +
+  geom_boxplot(alpha = 0.85, 
+               color = "gray80", 
+               outlier.shape = 15, 
+               outlier.size = 2) +
+  geom_jitter(alpha = 0.5, 
+              height = 0, 
+              width = .15, 
+              size = 1, 
+              color = "tomato") +
+  labs(title = "Distribution of total individual gross earnings by county",
+       subtitle = "Hancock Airport Renovations",
+       caption = "Source: Syracuse Regional Airport Authority",
+       x = "County",
+       y = "Total Individual Gross Earnings (USD)") +
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+
+```
+
+<br>
+
+<center>
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+dist_inds
+
+```
+
+</center>
